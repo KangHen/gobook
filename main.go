@@ -12,7 +12,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// Connect to the database
+/**
+* Connection Database
+**/
 func dbConn() (db *sql.DB) {
     dbDriver := "mysql"
     dbUser := "root"
@@ -32,12 +34,46 @@ func dbConn() (db *sql.DB) {
     return db
 }
 
+/*
+* Book Type
+*/
+
+type Book struct{
+    id int
+    name string
+    category_id string
+    created_at string
+}
+
+/**
+* Action
+**/
 func bookIndex(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "Welcome to the index page")
 }
 
 func bookShow(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "Welcome to the show page")
+    vars := mux.Vars(r)
+    bookId := vars["id"]
+
+    query := "SELECT id, name, category_id, created_at FROM books WHERE id = ?"
+
+    var (
+        id   int
+        name  string
+        category_id int
+        created_at string
+    )
+
+    err := dbConn().QueryRow(query, bookId).Scan(&id, &name, &category_id, &created_at)
+
+    if err != nil {
+        fmt.Fprintf(w, "Book with %s not found and has some error %s", bookId, err)
+
+        return
+    }
+
+    fmt.Fprintf(w, "Found Book with name : %s , category : %d , created at : %s and by id : %d", name, category_id, created_at, id)
 }
 
 func bookCreate(w http.ResponseWriter, r *http.Request) {
