@@ -36,6 +36,10 @@ func dbConn() (db *sql.DB) {
     return db
 }
 
+type BookCategory struct {
+    ID int
+    Name string
+}
 
 type Book struct{
     ID int
@@ -53,10 +57,6 @@ type BookData struct {
     SelectedID int
 }
 
-type BookCategory struct {
-    ID int
-    Name string
-}
 
 var tmpl = template.Must(template.New("").Funcs(template.FuncMap{
     "add": func(a, b int) int {
