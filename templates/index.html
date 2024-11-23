@@ -4,36 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title>
+    <title>Book CRUD</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
-    <h1></h1>
-    <nav>
-        <a href="/books/create">Buat Buku</a>
-    </nav>
-    <br />
-    <table border="1">
-        <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Category ID</th>
-            <th>Created At</th>
-            <th>Action</th>
-        </tr>
-        {{range .Books}}
-        <tr>
-            <td>{{ .ID }}</td>
-            <td>{{ .Name }}</td>
-            <td>{{ .CategoryId }}</td>
-            <td>{{ .CreatedAt }}</td>
-            <td>
-                <a href="/books/edit/{{ .ID }}">Update</a>
-                <a href="/books/delete/{{ .ID }}">Delete</a>
-            </td>
-        </tr>
-        {{end}}
-    </table>
+    <div class="container mt-5">
+        <h1>Book CRUD</h1>
+        <div class="alert alert-primary mt-3" role="alert">
+            This is a simple book CRUD application built with Go and Bootstrap.
+        </div>
+
+        <div class="alert alert-success mt-3 mb-3">
+            This application, you can create, read, update, and delete books.
+        </div>
+        <a class="btn btn-primary" href="/books">Show All Book</a>
+    </div>
 </body>
 
 </html>

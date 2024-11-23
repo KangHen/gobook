@@ -13,9 +13,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
-/**
-* Connection Database
-**/
+// dbConn returns a SQL database connection object.
+//
+// The returned connection is pinged to verify the connection is valid.
+// If the connection is invalid, the function panics.
 func dbConn() (db *sql.DB) {
     dbDriver := "mysql"
     dbUser := "root"
@@ -35,9 +36,6 @@ func dbConn() (db *sql.DB) {
     return db
 }
 
-/*
-* Book Type
-*/
 
 type Book struct{
     ID int
@@ -51,11 +49,14 @@ type BookData struct {
     Books []Book
 }
 
-var tmpl = template.Must(template.ParseGlob("templates/*"))
+var tmpl = template.Must(template.New("").Funcs(template.FuncMap{
+    "add": func(a, b int) int {
+        return a + b
+    },
+}).ParseGlob("templates/*"))
 
-/**
-* Action
-**/
+
+// bookIndex responds to GET requests to "/" and shows all books in the database.
 func bookIndex(w http.ResponseWriter, r *http.Request) {
     db := dbConn()
     query := `SELECT id, name, category_id, created_at FROM books;`
@@ -85,10 +86,12 @@ func bookIndex(w http.ResponseWriter, r *http.Request) {
         Books: books,
     }
 
-    tmpl.ExecuteTemplate(w, "index.html", data)
+    tmpl.ExecuteTemplate(w, "book.html", data)
     defer db.Close()
 }
 
+// bookShow responds to GET requests to "/books/{id}" and shows a book with matching id
+// from the database.
 func bookShow(w http.ResponseWriter, r *http.Request) {
     vars := mux.Vars(r)
     bookId := vars["id"]
@@ -111,8 +114,11 @@ func bookShow(w http.ResponseWriter, r *http.Request) {
     defer db.Close()
 }
 
+// bookEdit responds to GET requests to "/books/edit/{id}" and shows a book with matching id
+// from the database in a form ready to be edited.
 func bookEdit(w http.ResponseWriter, r *http.Request) {
-    var bookId = mux.Vars(r)["id"]
+    vars := mux.Vars(r)
+    bookId := vars["id"]
 
     db := dbConn()
     query := "SELECT id, name, category_id, created_at FROM books WHERE id = ?"
@@ -127,17 +133,20 @@ func bookEdit(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    tmpl.ExecuteTemplate(w, "update.html", b)
+    tmpl.ExecuteTemplate(w, "edit.html", b)
 
     defer db.Close()
 }
 
+// bookCreate responds to GET requests to "/books/create" and shows a form for creating a new book.
 func bookCreate(w http.ResponseWriter, r *http.Request) {
     tmpl.ExecuteTemplate(w, "create.html", BookData{
         PageTitle: "Create Book",
     })
 }
 
+// bookStore responds to POST requests to "/books/store" and stores the book in the database.
+// It will redirect to "/books" if the book is successfully stored.
 func bookStore(w http.ResponseWriter, r *http.Request) {
     var (
         name = r.FormValue("name")
@@ -167,7 +176,10 @@ func bookStore(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-
+// bookUpdate responds to POST requests to "/books/update/{id}" and updates the book
+// with matching id in the database.
+//
+// It will redirect to "/books" if the book is successfully updated.
 func bookUpdate(w http.ResponseWriter, r *http.Request) {
     var bookId = mux.Vars(r)["id"]
 
@@ -185,31 +197,56 @@ func bookUpdate(w http.ResponseWriter, r *http.Request) {
     http.Redirect(w, r, "/books", http.StatusSeeOther)
 }
 
+// bookDelete responds to POST requests to "/books/delete/{id}" and deletes the book
+// with matching id in the database.
+//
+// It will redirect to "/books" if the book is successfully deleted.
 func bookDelete(w http.ResponseWriter, r *http.Request) {
+    var bookId = mux.Vars(r)["id"]
 
-    fmt.Fprintf(w, "Welcome to the delete page")
+    db := dbConn()
+    query := "DELETE FROM books WHERE id = ?"
+
+    _, err := db.Exec(query, bookId)
+
+    if err != nil {
+        fmt.Fprintf(w, "Book with %s not found and has some error %s", bookId, err)
+
+        return
+    }
+
+    http.Redirect(w, r, "/books", http.StatusSeeOther)
 }
 
+// main is the main entry point for the application.
+// It creates a new router and sets up the routes for the books. It then
+// starts the server and listens on port 8000.
 func main() {
     defer dbConn().Close()
 
     r := mux.NewRouter()
 
+    r.PathPrefix("/static/").
+        Handler(http.StripPrefix("/static/", 
+            http.FileServer(http.Dir("./assets/"))))
+
     r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "Welcome to the home page")
+        tmpl.ExecuteTemplate(w, "index.html", BookData{
+            PageTitle: "Book",
+        })
     })
     /**
     * Create a new subrouter for books
     * Define the routes for the books
     */
-    //bookRouter := r.PathPrefix("/books").Subrouter()
     r.HandleFunc("/books", bookIndex)
-    r.HandleFunc("/books/create", bookCreate)
-    r.HandleFunc("/books/show/{id}", bookShow)
-    r.HandleFunc("/books/edit/{id}", bookEdit)
-    r.HandleFunc("/books/store", bookStore).Methods("POST")
-    r.HandleFunc("/books/update/{id}", bookUpdate).Methods("POST")
-    r.HandleFunc("/books/delete/{id}", bookDelete).Methods("GET")
+    bookRouter := r.PathPrefix("/books").Subrouter()
+    bookRouter.HandleFunc("/create", bookCreate)
+    bookRouter.HandleFunc("/show/{id}", bookShow)
+    bookRouter.HandleFunc("/edit/{id}", bookEdit)
+    bookRouter.HandleFunc("/store", bookStore).Methods("POST")
+    bookRouter.HandleFunc("/update/{id}", bookUpdate).Methods("POST")
+    bookRouter.HandleFunc("/delete/{id}", bookDelete)
 
     log.Fatal(http.ListenAndServe(":8000", r))
 }

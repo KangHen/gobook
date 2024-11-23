@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1>Book List</h1>
+        <nav>
+            <a class="btn btn-secondary me-2" href="/">Home</a>
+            <a class="btn btn-primary" href="/books/create">Create Book</a>
+        </nav>
+        <br />
+        <table class="table table-bordered">
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Category ID</th>
+                <th>Created At</th>
+                <th>Action</th>
+            </tr>
+            {{range $i, $book := .Books}}
+            {{ $index := add $i 1}}
+            <tr>
+                <td>{{ $index }}</td>
+                <td>{{ $book.Name }}</td>
+                <td>{{ $book.CategoryId }}</td>
+                <td>{{ $book.CreatedAt }}</td>
+                <td>
+                    <a class="btn btn-sm btn-outline-primary" href="/books/edit/{{ $book.ID }}">Update</a>
+                    <a class="btn btn-sm btn-outline-danger"
+                        onclick="return confirm('Are you sure for deleted this book?')"
+                        href="/books/delete/{{ $book.ID }}">Delete</a>
+                </td>
+            </tr>
+            {{end}}
+        </table>
+    </div>
+</body>
+
+</html>
