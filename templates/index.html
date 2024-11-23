@@ -19,6 +19,7 @@
             <th>Name</th>
             <th>Category ID</th>
             <th>Created At</th>
+            <th>Action</th>
         </tr>
         {{range .Books}}
         <tr>
@@ -26,6 +27,10 @@
             <td>{{ .Name }}</td>
             <td>{{ .CategoryId }}</td>
             <td>{{ .CreatedAt }}</td>
+            <td>
+                <a href="/books/edit/{{ .ID }}">Update</a>
+                <a href="/books/delete/{{ .ID }}">Delete</a>
+            </td>
         </tr>
         {{end}}
     </table>

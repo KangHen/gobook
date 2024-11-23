@@ -61,7 +61,6 @@ func bookIndex(w http.ResponseWriter, r *http.Request) {
     query := `SELECT id, name, category_id, created_at FROM books;`
     
     rows, err := db.Query(query)
-    defer rows.Close()
 
     if err != nil {
         log.Println(err)
@@ -69,6 +68,8 @@ func bookIndex(w http.ResponseWriter, r *http.Request) {
 
         return
     }
+
+    defer rows.Close()
 
     books := []Book{}
     
@@ -110,13 +111,42 @@ func bookShow(w http.ResponseWriter, r *http.Request) {
     defer db.Close()
 }
 
-func bookCreate(w http.ResponseWriter, r *http.Request) {
-    name := "Kala Senjana"
-    categoryId := 1
-    createdAt := time.Now()
+func bookEdit(w http.ResponseWriter, r *http.Request) {
+    var bookId = mux.Vars(r)["id"]
 
     db := dbConn()
-    result, err := db.Exec(`INSERT INTO books (name, category_id, created_at) values (?, ?, ?)`, name, categoryId, createdAt)
+    query := "SELECT id, name, category_id, created_at FROM books WHERE id = ?"
+
+    var b Book
+
+    err := db.QueryRow(query, bookId).Scan(&b.ID, &b.Name, &b.CategoryId, &b.CreatedAt)
+
+    if err != nil {
+        fmt.Fprintf(w, "Book with %s not found and has some error %s", bookId, err)
+
+        return
+    }
+
+    tmpl.ExecuteTemplate(w, "update.html", b)
+
+    defer db.Close()
+}
+
+func bookCreate(w http.ResponseWriter, r *http.Request) {
+    tmpl.ExecuteTemplate(w, "create.html", BookData{
+        PageTitle: "Create Book",
+    })
+}
+
+func bookStore(w http.ResponseWriter, r *http.Request) {
+    var (
+        name = r.FormValue("name")
+        category_id = r.FormValue("category_id")
+        created_at = time.Now().Format("2006-01-02 15:04:05")
+    )
+
+    db := dbConn()
+    result, err := db.Exec(`INSERT INTO books (name, category_id, created_at) values (?, ?, ?)`, name, category_id, created_at)
 
     if err != nil {
         fmt.Fprintf(w, "Error , Failed Stored the Book")
@@ -137,12 +167,22 @@ func bookCreate(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func bookStore(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "Welcome to the store page")
-}
 
 func bookUpdate(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "Welcome to the update page")
+    var bookId = mux.Vars(r)["id"]
+
+    db := dbConn()
+    query := "UPDATE books SET name = ?, category_id = ?, updated_at = ? WHERE id = ?"
+
+    _, err := db.Exec(query, r.FormValue("name"), r.FormValue("category_id"), time.Now().Format("2006-01-02 15:04:05"), bookId)
+
+    if err != nil {
+        fmt.Fprintf(w, "Book with %s not found and has some error %s", bookId, err)
+
+        return
+    }
+
+    http.Redirect(w, r, "/books", http.StatusSeeOther)
 }
 
 func bookDelete(w http.ResponseWriter, r *http.Request) {
@@ -166,9 +206,10 @@ func main() {
     r.HandleFunc("/books", bookIndex)
     r.HandleFunc("/books/create", bookCreate)
     r.HandleFunc("/books/show/{id}", bookShow)
+    r.HandleFunc("/books/edit/{id}", bookEdit)
     r.HandleFunc("/books/store", bookStore).Methods("POST")
-    r.HandleFunc("/books/update/{id}", bookUpdate).Methods("PUT")
-    r.HandleFunc("/books/delete/{id}", bookDelete).Methods("DELETE")
+    r.HandleFunc("/books/update/{id}", bookUpdate).Methods("POST")
+    r.HandleFunc("/books/delete/{id}", bookDelete).Methods("GET")
 
     log.Fatal(http.ListenAndServe(":8000", r))
 }
