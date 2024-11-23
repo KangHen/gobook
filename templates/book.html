@@ -32,6 +32,7 @@
                 <td>{{ index $.Category $book.CategoryId }}</td>
                 <td>{{ $book.CreatedAt }}</td>
                 <td>
+                    <a class="btn btn-sm btn-outline-success" href="/books/show/{{ $book.ID }}">Show</a>
                     <a class="btn btn-sm btn-outline-primary" href="/books/edit/{{ $book.ID }}">Update</a>
                     <a class="btn btn-sm btn-outline-danger"
                         onclick="return confirm('Are you sure for deleted this book?')"

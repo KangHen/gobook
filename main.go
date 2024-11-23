@@ -46,6 +46,7 @@ type Book struct{
     Name string
     CategoryId int
     CreatedAt string
+    UpdatedAt *string
 }
 
 type BookData struct {
@@ -57,7 +58,6 @@ type BookData struct {
     SelectedID int
 }
 
-
 var tmpl = template.Must(template.New("").Funcs(template.FuncMap{
     "add": func(a, b int) int {
         return a + b
@@ -66,7 +66,6 @@ var tmpl = template.Must(template.New("").Funcs(template.FuncMap{
         return a == b
     },
 }).ParseGlob("templates/*"))
-
 
 // bookIndex responds to GET requests to "/" and shows all books in the database.
 func bookIndex(w http.ResponseWriter, r *http.Request) {
@@ -92,14 +91,14 @@ func bookIndex(w http.ResponseWriter, r *http.Request) {
 
         books = append(books, book)
     }
-
-    category := map[int]string {
+    
+    var category = map[int]string {
         1: "Mythology",
         2: "Math",
         3: "Historical",
         4: "Mystery",
     }
-    
+
     data := BookData{
         PageTitle: "Book",
         Books: books,
@@ -117,11 +116,11 @@ func bookShow(w http.ResponseWriter, r *http.Request) {
     bookId := vars["id"]
 
     db := dbConn()
-    query := "SELECT id, name, category_id, created_at FROM books WHERE id = ?"
+    query := "SELECT id, name, category_id, created_at, updated_at FROM books WHERE id = ?"
 
     var b Book
 
-    err := db.QueryRow(query, bookId).Scan(&b.ID, &b.Name, &b.CategoryId, &b.CreatedAt)
+    err := db.QueryRow(query, bookId).Scan(&b.ID, &b.Name, &b.CategoryId, &b.CreatedAt, &b.UpdatedAt)
 
     if err != nil {
         fmt.Fprintf(w, "Book with %s not found and has some error %s", bookId, err)
@@ -129,8 +128,20 @@ func bookShow(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    fmt.Fprintf(w, "Found Book with name : %s , category : %d , created at : %s and by id : %d", b.Name, b.CategoryId, b.CreatedAt, b.ID)
+    var category = map[int]string {
+        1: "Mythology",
+        2: "Math",
+        3: "Historical",
+        4: "Mystery",
+    }
 
+    data := BookData{
+        Book: b,
+        Category: category,
+    }
+
+    tmpl.ExecuteTemplate(w, "show.html", data)
+    
     defer db.Close()
 }
 
@@ -279,8 +290,8 @@ func main() {
     * Create a new subrouter for books
     * Define the routes for the books
     */
-    r.HandleFunc("/books", bookIndex)
     bookRouter := r.PathPrefix("/books").Subrouter()
+    bookRouter.HandleFunc("", bookIndex)
     bookRouter.HandleFunc("/create", bookCreate)
     bookRouter.HandleFunc("/show/{id}", bookShow)
     bookRouter.HandleFunc("/edit/{id}", bookEdit)
