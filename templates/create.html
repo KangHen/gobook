@@ -19,7 +19,11 @@
             </div>
             <div class="mb-3">
                 <label for="category_id" class="form-label">Category ID</label>
-                <input type="number" class="form-control" id="category_id" name="category_id" required>
+                <select name="category_id" class="form-select">
+                    {{ range .Categories }}
+                    <option value="{{ .ID }}">{{ .Name }}</option>
+                    {{ end }}
+                </select>
             </div>
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>

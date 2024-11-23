@@ -29,7 +29,7 @@
             <tr>
                 <td>{{ $index }}</td>
                 <td>{{ $book.Name }}</td>
-                <td>{{ $book.CategoryId }}</td>
+                <td>{{ index $.Category $book.CategoryId }}</td>
                 <td>{{ $book.CreatedAt }}</td>
                 <td>
                     <a class="btn btn-sm btn-outline-primary" href="/books/edit/{{ $book.ID }}">Update</a>

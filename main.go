@@ -47,11 +47,23 @@ type Book struct{
 type BookData struct {
     PageTitle string
     Books []Book
+    Book Book
+    Categories []BookCategory
+    Category map[int] string
+    SelectedID int
+}
+
+type BookCategory struct {
+    ID int
+    Name string
 }
 
 var tmpl = template.Must(template.New("").Funcs(template.FuncMap{
     "add": func(a, b int) int {
         return a + b
+    },
+    "eq": func (a , b interface{}) bool {
+        return a == b
     },
 }).ParseGlob("templates/*"))
 
@@ -81,9 +93,17 @@ func bookIndex(w http.ResponseWriter, r *http.Request) {
         books = append(books, book)
     }
 
+    category := map[int]string {
+        1: "Mythology",
+        2: "Math",
+        3: "Historical",
+        4: "Mystery",
+    }
+    
     data := BookData{
         PageTitle: "Book",
         Books: books,
+        Category: category,
     }
 
     tmpl.ExecuteTemplate(w, "book.html", data)
@@ -133,15 +153,35 @@ func bookEdit(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    tmpl.ExecuteTemplate(w, "edit.html", b)
+    categories := []BookCategory{
+        {ID: 1, Name: "Mythology"},
+        {ID: 2, Name: "Math"},
+        {ID: 3, Name: "Historical"},
+        {ID: 4, Name: "Mystery"},
+    }
+
+    tmpl.ExecuteTemplate(w, "edit.html", BookData{
+        PageTitle: "Edit Book",
+        Book: b,
+        Categories: categories,
+        SelectedID: b.CategoryId,
+    })
 
     defer db.Close()
 }
 
 // bookCreate responds to GET requests to "/books/create" and shows a form for creating a new book.
 func bookCreate(w http.ResponseWriter, r *http.Request) {
+    categories := []BookCategory{
+        {ID: 1, Name: "Mythology"},
+        {ID: 2, Name: "Math"},
+        {ID: 3, Name: "Historical"},
+        {ID: 4, Name: "Mystery"},
+    }
+
     tmpl.ExecuteTemplate(w, "create.html", BookData{
         PageTitle: "Create Book",
+        Categories: categories,
     })
 }
 

@@ -4,23 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Buku {{ .Name }}</title>
+    <title>Edit Buku {{ .Book.Name }}</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
     <div class="container mt-5">
-        <h1>Edit Buku {{ .Name }}</h1>
+        <h1>Edit Buku {{ .Book.Name }}</h1>
         <a href="/books" class="btn btn-secondary mb-2">Back</a>
-        <form action="/books/update/{{ .ID }}" method="post">
+        <form action="/books/update/{{ .Book.ID }}" method="post">
             <div class="mb-3">
                 <label for="name" class="form-label">Name</label>
-                <input type="text" class="form-control" id="name" name="name" value="{{ .Name }}" required>
+                <input type="text" class="form-control" id="name" name="name" value="{{ .Book.Name }}" required>
             </div>
             <div class="mb-3">
                 <label for="category_id" class="form-label">Category ID</label>
-                <input type="number" class="form-control" id="category_id" name="category_id" value="{{ .CategoryId }}"
-                    required>
+                <select name="category_id" class="form-select">
+                    {{ range .Categories }}
+                    <option value="{{ .ID }}" {{if eq .ID $.SelectedID }} selected {{end}}>{{ .Name }}</option>
+                    {{ end }}
+                </select>
             </div>
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>

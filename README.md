@@ -22,3 +22,4 @@ Completely Task with Basic CRUD with Go Lang. Understand the Router, Connection 
 - time
 - github.com/gorilla/mux
 - github.com/go-sql-driver/mysql
+- html/template
