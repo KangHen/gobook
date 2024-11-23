@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+</head>
+
+<body>
+    <h1></h1>
+    <nav>
+        <a href="/books/create">Buat Buku</a>
+    </nav>
+    <br />
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Category ID</th>
+            <th>Created At</th>
+        </tr>
+        {{range .Books}}
+        <tr>
+            <td>{{ .ID }}</td>
+            <td>{{ .Name }}</td>
+            <td>{{ .CategoryId }}</td>
+            <td>{{ .CreatedAt }}</td>
+        </tr>
+        {{end}}
+    </table>
+</body>
+
+</html>

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"time"
@@ -39,33 +40,64 @@ func dbConn() (db *sql.DB) {
 */
 
 type Book struct{
-    id int
-    name string
-    category_id string
-    created_at string
+    ID int
+    Name string
+    CategoryId int
+    CreatedAt string
 }
+
+type BookData struct {
+    PageTitle string
+    Books []Book
+}
+
+var tmpl = template.Must(template.ParseGlob("templates/*"))
 
 /**
 * Action
 **/
 func bookIndex(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "Welcome to the index page")
+    db := dbConn()
+    query := `SELECT id, name, category_id, created_at FROM books;`
+    
+    rows, err := db.Query(query)
+    defer rows.Close()
+
+    if err != nil {
+        log.Println(err)
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+
+        return
+    }
+
+    books := []Book{}
+    
+    for rows.Next() {
+        book := Book{}
+        rows.Scan(&book.ID, &book.Name, &book.CategoryId, &book.CreatedAt)
+
+        books = append(books, book)
+    }
+
+    data := BookData{
+        PageTitle: "Book",
+        Books: books,
+    }
+
+    tmpl.ExecuteTemplate(w, "index.html", data)
+    defer db.Close()
 }
 
 func bookShow(w http.ResponseWriter, r *http.Request) {
     vars := mux.Vars(r)
     bookId := vars["id"]
 
+    db := dbConn()
     query := "SELECT id, name, category_id, created_at FROM books WHERE id = ?"
 
-    var (
-        id   int
-        name  string
-        category_id int
-        created_at string
-    )
+    var b Book
 
-    err := dbConn().QueryRow(query, bookId).Scan(&id, &name, &category_id, &created_at)
+    err := db.QueryRow(query, bookId).Scan(&b.ID, &b.Name, &b.CategoryId, &b.CreatedAt)
 
     if err != nil {
         fmt.Fprintf(w, "Book with %s not found and has some error %s", bookId, err)
@@ -73,15 +105,18 @@ func bookShow(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    fmt.Fprintf(w, "Found Book with name : %s , category : %d , created at : %s and by id : %d", name, category_id, created_at, id)
+    fmt.Fprintf(w, "Found Book with name : %s , category : %d , created at : %s and by id : %d", b.Name, b.CategoryId, b.CreatedAt, b.ID)
+
+    defer db.Close()
 }
 
 func bookCreate(w http.ResponseWriter, r *http.Request) {
-    name := "Atomic Habbit"
+    name := "Kala Senjana"
     categoryId := 1
     createdAt := time.Now()
 
-    result, err := dbConn().Exec(`INSERT INTO books (name, category_id, created_at) values (?, ?, ?)`, name, categoryId, createdAt)
+    db := dbConn()
+    result, err := db.Exec(`INSERT INTO books (name, category_id, created_at) values (?, ?, ?)`, name, categoryId, createdAt)
 
     if err != nil {
         fmt.Fprintf(w, "Error , Failed Stored the Book")
@@ -91,9 +126,15 @@ func bookCreate(w http.ResponseWriter, r *http.Request) {
 
     if err != nil {
         fmt.Fprintf(w, "Error , Lat Id not found")
+        return
     }
     
-    fmt.Fprintf(w, "Book Id : %d", bookId)
+
+    defer db.Close()
+    
+    if (bookId > 0) {
+        http.Redirect(w, r, "/books", http.StatusSeeOther)
+    }
 }
 
 func bookStore(w http.ResponseWriter, r *http.Request) {
@@ -105,10 +146,13 @@ func bookUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 func bookDelete(w http.ResponseWriter, r *http.Request) {
+
     fmt.Fprintf(w, "Welcome to the delete page")
 }
 
 func main() {
+    defer dbConn().Close()
+
     r := mux.NewRouter()
 
     r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
